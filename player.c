@@ -209,7 +209,7 @@ void player_put_packet(seq_t seqno, uint8_t *data, int len) {
     } else if (seq_order(ab_read, seqno)) {     // late but not yet played
         abuf = audio_buffer + BUFIDX(seqno);
     } else {    // too late.
-        warn("late packet %04X (%04X:%04X)", seqno, ab_read, ab_write);
+        debug(1, "late packet %04X (%04X:%04X)", seqno, ab_read, ab_write);
     }
     buf_fill = seq_diff(ab_read, ab_write);
     pthread_mutex_unlock(&ab_mutex);
@@ -381,7 +381,7 @@ static short *buffer_get_frame(void) {
 
     abuf_t *curframe = audio_buffer + BUFIDX(read);
     if (!curframe->ready) {
-        warn("missing frame %04X.", read);
+        debug(1, "missing frame %04X.", read);
         memset(curframe->data, 0, FRAME_BYTES(frame_size));
     }
     curframe->ready = 0;
@@ -516,11 +516,7 @@ int player_play(stream_cfg *stream) {
 #endif
 
     please_stop = 0;
-    if (config.cmd_start && !fork()) {
-        if (system(config.cmd_start))
-            warn("exec of external start command failed");
-        exit(0);
-    }
+    command_start();
     config.output->start(sampling_rate);
     pthread_create(&player_thread, NULL, player_thread_func, NULL);
 
@@ -531,11 +527,7 @@ void player_stop(void) {
     please_stop = 1;
     pthread_join(player_thread, NULL);
     config.output->stop();
-    if (config.cmd_stop && !fork()) {
-        if (system(config.cmd_stop))
-            warn("exec of external stop command failed");
-        exit(0);
-    }
+    command_stop();
     free_buffer();
     free_decoder();
 #ifdef FANCY_RESAMPLING

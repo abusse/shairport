@@ -28,6 +28,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include <netdb.h>
 #include <sys/select.h>
 #include <signal.h>
@@ -412,8 +413,7 @@ static void handle_setup(rtsp_conn_info *conn,
     player_play(&conn->stream);
 
     char *resphdr = malloc(strlen(hdr) + 20);
-    strcpy(resphdr, hdr);
-    sprintf(resphdr + strlen(resphdr), ";server_port=%d", sport);
+    sprintf(resphdr, "%s;server_port=%d;control_port=%d;timing_port=%d", "RTP/AVP/UDP;unicast;mode=record", sport, sport, sport);
     msg_add_header(resp, "Transport", resphdr);
 
     msg_add_header(resp, "Session", "1");
